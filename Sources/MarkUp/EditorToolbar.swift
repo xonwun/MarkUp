@@ -1,7 +1,42 @@
 import SwiftUI
 
-/// The toolbar's two clusters. They sit on borderless toolbar items, so macOS draws no glass container,
-/// and use the sidebar's own button and segment styles.
+// Disambiguate the property wrapper from the SDK’s State macro.
+private typealias ViewState<Value> = SwiftUI.State<Value>
+
+/// The row at the top of the card: no background, divider, or containers. Its empty space works as a title bar.
+struct EditorToolbar: View {
+    @ObservedObject var document: EditorDocument
+    @ViewState private var navigationWidth: CGFloat = 0
+    @ViewState private var actionsWidth: CGFloat = 0
+    private static let padding: CGFloat = 6
+    /// With the sidebar hidden, the traffic lights float over the card's top-left corner.
+    private var leadingInset: CGFloat {
+        document.showSidebar ? 0 : max(0, document.trafficLightsMaxX + 8 - InterfaceMetrics.windowInset - Self.padding)
+    }
+    var body: some View {
+        ZStack {
+            HStack(spacing: 0) {
+                ToolbarCluster(document: document, placement: .navigation)
+                    .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { navigationWidth = $0 }
+                Spacer(minLength: 0)
+                ToolbarCluster(document: document, placement: .actions)
+                    .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { actionsWidth = $0 }
+            }
+            .padding(.leading, leadingInset)
+            // Centered on the card, clear of whichever cluster is wider.
+            Text(document.title).font(.system(size: 13, weight: .semibold))
+                .lineLimit(1).truncationMode(.middle)
+                .frame(maxWidth: 260)
+                .overlay(WindowDragArea(toolTip: document.fileURL?.path ?? document.title))
+                .padding(.horizontal, max(navigationWidth + leadingInset, actionsWidth) + 12)
+        }
+        .padding(.horizontal, Self.padding)
+        .frame(height: InterfaceMetrics.toolbarHeight)
+        .background(WindowDragArea())
+    }
+}
+
+/// The toolbar's two clusters, drawn with the sidebar's own button and segment styles.
 struct ToolbarCluster: View {
     enum Placement { case navigation, actions }
     @ObservedObject var document: EditorDocument
@@ -11,20 +46,21 @@ struct ToolbarCluster: View {
             switch placement {
             case .navigation:
                 icon("sidebar.left", document.tr("Toggle Sidebar", "切换侧边栏"), "⌃⌘S", on: document.showSidebar) { document.toggleSidebar() }
+                    .onboardingHint(.sidebar, document: document)
                 icon("folder", document.tr("Open", "打开"), "⌘O") { document.open() }
             case .actions:
-                HStack(spacing: 2) {
-                    layoutTab(.compact, symbol: "text.justify.left", title: document.tr("Compact", "紧凑"))
-                    layoutTab(.reading, symbol: "book", title: document.tr("Reading", "阅读"))
+                segmented(document.tr("Editor layout", "编辑布局")) {
+                    segment("text.justify.left", document.tr("Compact layout", "紧凑布局"), selected: document.layout == .compact) { document.setLayout(.compact) }
+                    segment("book", document.tr("Reading layout", "阅读布局"), selected: document.layout == .reading) { document.setLayout(.reading) }
                 }
-                .segmentTrack()
-                .disabled(document.busy || !document.ready)
-                .accessibilityElement(children: .contain)
-                .accessibilityLabel(document.tr("Editor layout", "编辑布局"))
-                .padding(.trailing, 6)
+                .onboardingHint(.layout, document: document)
+                segmented(document.tr("Text view", "文本视图")) {
+                    segment("textformat", document.tr("Formatted · ⇧⌘M", "排版 · ⇧⌘M"), selected: !document.sourceMode) { if document.sourceMode { document.toggleMode() } }
+                    segment("chevron.left.forwardslash.chevron.right", document.tr("Source · ⇧⌘M", "源码 · ⇧⌘M"), selected: document.sourceMode) { if !document.sourceMode { document.toggleMode() } }
+                }
+                .onboardingHint(.source, document: document)
                 icon("magnifyingglass", document.tr("Find", "查找"), "⌘F", on: document.showFind) { document.toggleFind() }
-                icon("chevron.left.forwardslash.chevron.right", document.tr("Toggle Source", "切换源码"), "⇧⌘M", on: document.sourceMode) { document.toggleMode() }
-                icon("square.and.arrow.down", document.tr("Save", "保存"), "⌘S") { document.save() }
+                    .onboardingHint(.find, document: document)
             }
         }
         .fixedSize()
@@ -41,15 +77,23 @@ struct ToolbarCluster: View {
         .accessibilityLabel(title)
         .accessibilityAddTraits(on ? .isSelected : [])
     }
-    private func layoutTab(_ layout: EditorLayout, symbol: String, title: String) -> some View {
-        let selected = document.layout == layout
-        return Button { document.setLayout(layout) } label: {
+    /// A two-way switch drawn like the sidebar's Files/Outline tabs.
+    private func segmented<Content: View>(_ label: String, @ViewBuilder content: () -> Content) -> some View {
+        HStack(spacing: 2, content: content)
+            .segmentTrack()
+            .disabled(document.busy || !document.ready)
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel(label)
+            .padding(.trailing, 6)
+    }
+    private func segment(_ symbol: String, _ title: String, selected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
             Image(systemName: symbol).font(.system(size: 12)).foregroundStyle(selected ? Color.primary : Color.secondary)
                 .frame(width: 30, height: 22)
         }
         .buttonStyle(SidebarButtonStyle(selected: selected, shape: .insetControl))
-        .help(document.tr("\(title) layout", "\(title)布局"))
-        .accessibilityLabel(title)
+        .help(title)
+        .accessibilityLabel(title.components(separatedBy: " · ")[0])
         .accessibilityAddTraits(selected ? .isSelected : [])
     }
 }

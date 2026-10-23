@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="Assets/MarkUp-icon.png" width="128" height="128" alt="MarkUp app icon">
+  <img src="Assets/MarkUp-icon.png" width="128" height="128" alt="MarkUp.md app icon">
 </p>
 
-<h1 align="center">MarkUp</h1>
+<h1 align="center">MarkUp.md</h1>
 
 <p align="center">
   A calm, local Markdown editor for your Mac.<br>
@@ -15,32 +15,38 @@
 </p>
 
 <p align="center">
-  <img src="docs/images/screenshot.png" width="760" alt="MarkUp showing a document with a heading, a formatted table, and a flow diagram, with the outline in the sidebar">
+  <img src="docs/images/screenshot.png" width="620" alt="MarkUp.md in dark mode: the editor floats as a card on a glass window, with the toolbar on top and the document outline in the sidebar">
 </p>
 
-## Why MarkUp
+## Why MarkUp.md
 
-Most Markdown apps make you choose between a raw text editor and a preview pane. MarkUp gives you one page: the line you're editing shows its Markdown, and everything else looks finished. Your files are ordinary `.md` files on your Mac, with no account, cloud service, or library to import into.
+Most Markdown apps make you choose between a raw text editor and a preview pane. MarkUp.md gives you one page: the line you're editing shows its Markdown, and everything else looks finished. Your files are ordinary `.md` files on your Mac, with no account, cloud service, or library to import into.
 
 - **Formatting in place.** Headings, bold, lists, links and code look right as soon as you move off the line. Press ⇧⌘M any time to see the raw source.
 - **Tables and diagrams.** Markdown tables and [Mermaid](https://mermaid.js.org) diagrams render right in the document. Click one to edit its source.
 - **Your files, where you keep them.** Open any `.md` file from Finder. Recent files stay in the sidebar, and you can pin the ones you use most and drag to arrange them.
-- **Two ways to write.** *Compact* for working notes, *Reading* for a centered, book-like column. Switch from the toolbar.
+- **Two ways to write.** *Compact* for working notes, *Reading* for a centered, book-like column. Switch from the toolbar, next to the Formatted/Source switch.
 - **Find your place.** The Outline tab lists every heading so you can jump around long documents.
-- **Careful with your work.** MarkUp reminds you about unsaved changes, saves safely, and warns you if another app changed the file.
-- **Feels like a Mac app.** Light and dark mode, keyboard shortcuts, and English or Simplified Chinese.
+- **Careful with your work.** MarkUp.md reminds you about unsaved changes, saves safely, and warns you if another app changed the file.
+- **Feels like a Mac app.** A glass window with the page floating on it, light and dark mode, keyboard shortcuts, and English or Simplified Chinese.
+
+<p align="center">
+  <img src="docs/images/welcome.png" width="420" alt="The MarkUp.md welcome screen: the word Welcome in a serif face on glass, with a Start Writing button">
+</p>
+
+**A gentle start.** The first time you open MarkUp.md, a welcome screen greets you and then clears to open a short guide, Welcome.md. Small tips point out the sidebar, outline, layout, source, and find the first time you reach each one, and you can turn them off at any time.
 
 ## Install
 
-1. Download **MarkUp-0.4.0.dmg** from the [latest release](https://github.com/xonwun/MarkUp/releases/latest).
-2. Open it and drag **MarkUp** into **Applications**.
-3. Open MarkUp.
+1. Download the **.dmg** from the [latest release](https://github.com/xonwun/MarkUp/releases/latest).
+2. Open it and drag the app into **Applications**.
+3. Open it.
 
-**The first time you open it,** macOS may say it can't verify the developer. MarkUp is a free, open-source app that isn’t notarized by Apple yet. To open it anyway:
+**The first time you open it,** macOS may say it can't verify the developer. MarkUp.md is a free, open-source app that isn’t notarized by Apple yet. To open it anyway:
 
-- Open **System Settings → Privacy & Security**, scroll down, and click **Open Anyway** next to the MarkUp message. You only need to do this once.
+- Open **System Settings → Privacy & Security**, scroll down, and click **Open Anyway** next to the MarkUp.md message. You only need to do this once.
 
-Prefer a zip? **MarkUp-0.4.0.zip** is on the same release page.
+Prefer a zip? There's one on the same release page.
 
 ## Keyboard shortcuts
 
@@ -66,8 +72,8 @@ Requires macOS 14+, Swift 6 (Xcode or the Command Line Tools), and Node.js 22+.
 
 ```sh
 npm ci
-./scripts/build-app.sh      # builds dist/MarkUp.app (universal)
-./scripts/package.sh        # also makes dist/MarkUp-<version>.dmg and .zip
+./scripts/build-app.sh      # builds dist/MarkUp.md.app (universal)
+./scripts/package.sh        # also makes dist/MarkUp.md-<version>.dmg and .zip
 ```
 
 Local builds are ad-hoc signed and not notarized.
@@ -83,4 +89,4 @@ More detail: [architecture](docs/Architecture.md), [design decisions](docs/Desig
 
 ## License
 
-MarkUp is open source under the [MIT License](LICENSE).
+MarkUp.md is open source under the [MIT License](LICENSE).

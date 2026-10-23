@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased — Glass window
+
+- Renamed the app to MarkUp.md. Preferences and recent files carry over.
+- After the welcome screen, the Welcome.md guide opens as an editable file of your own.
+- Added first-run onboarding: a one-time welcome screen (“Welcome” on glass that clears to reveal the editor), then small hints at the sidebar, outline, layout, source, and find controls, one at a time, the first time each is reachable. Using a feature dismisses its hint, and Turn Off Tips stops them. All of it respects Reduce Motion.
+- Redesigned the window from the Figma draft. The sidebar now sits on a translucent glass layer that fills the window, and the editor floats on it as a card. In light mode it has a faint outer ring, a crisp contact shadow, and a soft lift. In dark mode it has a rim lit from the top, with light shadows. Its corners are concentric with the window corner (10pt on macOS 26 and later). With the sidebar hidden, the card floats 6pt inside every window edge.
+- On first launch the window opens at full screen height and half the screen's width, centered. After that it restores its last size and position.
+- Added motion where the layout changes: the sidebar slides in and out, the find bar fades in, and diagrams fade in on first render. All of it respects Reduce Motion.
+- Moved the toolbar onto the top of the card, with no dividers or containers. Source view is now a Formatted/Source switch beside Compact/Reading, and the toolbar save button is gone (⌘S remains). The window has no system toolbar; the traffic lights line up with the toolbar row, and its empty space drags the window like a title bar.
+- Removed the dividers under the toolbar, find bar, status row, sidebar tabs, and outline header.
+- Unified the editor's neutral colors on one warm hue in both appearances, chosen from a three-way palette prototype. Light looks the same; the dark page loses its faint cool cast (#202222 → #222220, same lightness). Colors are now OKLCH in `style.css`.
+- Raised dark-mode secondary text (quotes, list markers, Markdown syntax) to a comfortable reading contrast: APCA Lc 60, up from about 50.
+
 ## 0.4.0 — Tables, diagrams, and sidebar control
 
 - Rendered top-level pipe tables (with column alignment) and Mermaid diagrams in place. Their source returns while the cursor is inside; clicking a table row or diagram, or arrowing into it, moves the cursor there. Saved text is unchanged.

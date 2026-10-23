@@ -1,4 +1,4 @@
-# Write it down, make it clear
+# Write it down, mark it up
 
 A quiet place to focus on your words.
 

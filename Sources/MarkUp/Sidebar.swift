@@ -28,16 +28,18 @@ struct EditorSidebar: View {
     @ViewState private var dragging: URL?
     @ViewState private var dropSlot: SidebarDropSlot?
     var body: some View {
+        // No background: the sidebar sits directly on the window glass.
         VStack(spacing: 0) {
+            // The traffic lights' row, level with the card's toolbar.
+            WindowDragArea().frame(height: InterfaceMetrics.windowInset + InterfaceMetrics.toolbarHeight)
             HStack(spacing: 2) {
                 tab("files", symbol: "doc.on.doc", title: document.tr("Files", "文件"))
                 tab("outline", symbol: "list.bullet.indent", title: document.tr("Outline", "大纲"))
-            }.segmentTrack().padding(8)
-            Divider()
+                    .onboardingHint(.outline, document: document)
+            }.segmentTrack().padding(.horizontal, 8).padding(.bottom, 4)
             if document.sidebarTab == "files" { fileContent } else { outlineContent }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(nsColor: .windowBackgroundColor))
     }
     private func tab(_ id: String, symbol: String, title: String) -> some View {
         let selected = document.sidebarTab == id
@@ -133,8 +135,7 @@ struct EditorSidebar: View {
                 Text(document.title).font(.system(size: 12, weight: .medium)).lineLimit(1).truncationMode(.middle)
                 Spacer()
                 Text("\(document.headings.count)").foregroundStyle(.secondary).monospacedDigit().font(.caption).frame(minWidth: 24, alignment: .trailing)
-            }.frame(height: 40).padding(.horizontal, 16).padding(.bottom, 6)
-            Divider()
+            }.frame(height: 32).padding(.horizontal, 16)
             if document.headings.isEmpty {
                 sidebarMessage("list.bullet.indent", title: document.tr("No headings yet", "暂无标题"), detail: document.tr("Add a heading with # to navigate your document.", "使用 # 添加标题，即可在这里跳转章节。"))
             } else {
@@ -258,15 +259,15 @@ private extension View {
     }
 }
 
-/// The sidebar's trailing edge: drag to resize, double-click to restore the default width.
+/// The sidebar's trailing edge, where the card begins: drag to resize, double-click to restore the default width.
 struct SidebarResizeHandle: View {
     @ObservedObject var document: EditorDocument
     @ViewState private var startWidth: CGFloat?
     @ViewState private var cursorPushed = false
     var body: some View {
-        Divider()
+        Color.clear.frame(width: 0)
             .overlay(alignment: .trailing) {
-                // Most of the hit area sits over the sidebar so the editor keeps its clicks.
+                // Most of the hit area sits over the sidebar's inset so the editor keeps its clicks.
                 Color.clear.frame(width: 8).contentShape(Rectangle()).offset(x: 2)
                     .onHover { updateCursor(hovering: $0) }
                     .gesture(DragGesture(minimumDistance: 1, coordinateSpace: .global)

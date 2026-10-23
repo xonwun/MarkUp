@@ -30,7 +30,7 @@ struct MarkUpApp: App {
                 Picker(document.tr("Interface language", "界面语言"), selection: $document.language) {
                     ForEach(InterfaceLanguage.allCases) { language in Text(language.name).tag(language) }
                 }
-                Text(document.tr("System menus and dialogs update after restarting MarkUp.", "系统菜单和对话框将在重新启动 MarkUp 后更新。"))
+                Text(document.tr("System menus and dialogs update after restarting MarkUp.md.", "系统菜单和对话框将在重新启动 MarkUp.md 后更新。"))
                     .font(.caption).foregroundStyle(.secondary)
             }.padding(24).frame(width: 400)
                 .environment(\.locale, Locale(identifier: document.language.rawValue))
@@ -110,67 +110,36 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 }
 
 @MainActor
-final class EditorWindowController: NSWindowController, NSToolbarDelegate {
+final class EditorWindowController: NSWindowController {
     let editorDocument: EditorDocument
-    private var languageObserver: AnyCancellable?
     init(document: EditorDocument) {
         self.editorDocument = document
-        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 900, height: 720), styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
+        // No toolbar: the title bar is transparent and the toolbar row lives at the top of the card.
+        let window = GlassWindow(contentRect: NSRect(x: 0, y: 0, width: 900, height: 720), styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView], backing: .buffered, defer: false)
+        window.titleVisibility = .hidden
+        window.titlebarAppearsTransparent = true
         window.isReleasedWhenClosed = false
         window.minSize = NSSize(width: document.minimumWindowWidth, height: 400)
-        window.setFrameAutosaveName("MarkUpEditor")
-        window.center()
         super.init(window: window)
         document.attachWindow(window)
         let content = NSHostingController(rootView: EditorWindow(document: document))
         content.sizingOptions = []
         window.contentViewController = content
-        let toolbar = NSToolbar(identifier: "MarkUpToolbar")
-        toolbar.delegate = self
-        toolbar.displayMode = .iconOnly
-        toolbar.centeredItemIdentifiers = [.init("documentTitle")]
-        window.titleVisibility = .hidden
-        window.toolbar = toolbar
-        window.toolbarStyle = .unifiedCompact
-        languageObserver = document.$language.dropFirst().sink { [weak self] _ in
-            Task { @MainActor in self?.refreshLabels() }
+        // Set after the content controller, which resizes the window. The saved frame wins; the first launch
+        // opens full height and half the screen's width, centered.
+        if !window.setFrameUsingName("MarkUpEditor") {
+            if let screen = (NSScreen.main ?? NSScreen.screens.first)?.visibleFrame {
+                let width = min(max((screen.width / 2).rounded(), window.minSize.width), screen.width)
+                window.setFrame(NSRect(x: (screen.midX - width / 2).rounded(), y: screen.minY, width: width, height: screen.height), display: false)
+            } else {
+                window.center()
+            }
         }
+        window.setFrameAutosaveName("MarkUpEditor")
+        window.layoutIfNeeded()
+        document.trafficLightsMaxX = window.trafficLightsMaxX
     }
     required init?(coder: NSCoder) { fatalError("Storyboard initialization is not supported") }
-    func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] { toolbarDefaultItemIdentifiers(toolbar) }
-    func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] { [.init("navigation"), .flexibleSpace, .init("documentTitle"), .flexibleSpace, .init("actions")] }
-    func toolbar(_ toolbar: NSToolbar, itemForItemIdentifier identifier: NSToolbarItem.Identifier, willBeInsertedIntoToolbar flag: Bool) -> NSToolbarItem? {
-        let item = NSToolbarItem(itemIdentifier: identifier)
-        switch identifier.rawValue {
-        case "documentTitle":
-            let title = NSTextField(labelWithString: editorDocument.title)
-            title.font = .systemFont(ofSize: 13, weight: .semibold)
-            title.alignment = .center
-            title.lineBreakMode = .byTruncatingMiddle
-            title.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-            title.widthAnchor.constraint(lessThanOrEqualToConstant: 260).isActive = true
-            title.widthAnchor.constraint(greaterThanOrEqualToConstant: 60).isActive = true
-            title.toolTip = editorDocument.fileURL?.path ?? editorDocument.title
-            item.view = title
-            item.visibilityPriority = .high
-            item.isBordered = false
-        // Borderless custom views: macOS draws no glass container around the clusters.
-        case "navigation": item.isNavigational = true; item.view = NSHostingView(rootView: ToolbarCluster(document: editorDocument, placement: .navigation)); item.isBordered = false
-        case "actions": item.view = NSHostingView(rootView: ToolbarCluster(document: editorDocument, placement: .actions)); item.isBordered = false
-        default: return nil
-        }
-        label(item)
-        return item
-    }
-    private func label(_ item: NSToolbarItem) {
-        switch item.itemIdentifier.rawValue {
-        case "documentTitle": item.label = editorDocument.title
-        case "navigation": item.label = editorDocument.tr("Navigation", "导航")
-        case "actions": item.label = editorDocument.tr("Actions", "操作")
-        default: break
-        }
-    }
-    private func refreshLabels() { window?.toolbar?.items.forEach(label) }
 }
 
 @MainActor
@@ -218,25 +187,28 @@ final class EditorDocument: NSObject, ObservableObject, WKScriptMessageHandler, 
     func resizeSidebar(to width: CGFloat, persist: Bool = false) {
         var upper = Self.sidebarWidths.upperBound
         if let window {
-            let wanted = min(width, upper) + Self.editorMinWidth + 1
+            let wanted = min(width, upper) + Self.editorMinWidth + InterfaceMetrics.windowInset
             if wanted > window.contentLayoutRect.width, let screen = window.screen?.visibleFrame {
                 var frame = window.frame
                 frame.size.width = min(frame.width + wanted - window.contentLayoutRect.width, screen.maxX - frame.minX)
                 window.setFrame(frame, display: true)
             }
-            upper = min(upper, window.contentLayoutRect.width - Self.editorMinWidth - 1)
+            upper = min(upper, window.contentLayoutRect.width - Self.editorMinWidth - InterfaceMetrics.windowInset)
         }
         sidebarWidth = min(max(width.rounded(), Self.sidebarWidths.lowerBound), max(upper, Self.sidebarWidths.lowerBound))
         if persist { UserDefaults.standard.set(Double(sidebarWidth), forKey: "sidebarWidth") }
         resizeForSidebar()
     }
-    var minimumWindowWidth: CGFloat { showSidebar ? Self.editorMinWidth + sidebarWidth + 1 : Self.editorMinWidth }
+    /// The card keeps the editor minimum; glass shows on its right, and on its left unless the sidebar fills that side.
+    var minimumWindowWidth: CGFloat { Self.editorMinWidth + InterfaceMetrics.windowInset + (showSidebar ? sidebarWidth : InterfaceMetrics.windowInset) }
+    /// Where the traffic lights end, so the toolbar clears them while the sidebar is hidden.
+    @Published var trafficLightsMaxX: CGFloat = 0
     @Published var sidebarTab = UserDefaults.standard.string(forKey: "sidebarTab") ?? "outline" {
         didSet { UserDefaults.standard.set(sidebarTab, forKey: "sidebarTab") }
     }
     @Published var headings: [Heading] = []
     var activeHeading: Int? { headings.last(where: { $0.line <= line })?.line }
-    func toggleSidebar() { showSidebar.toggle() }
+    func toggleSidebar() { withAnimation(.interface(.sidebar)) { showSidebar.toggle() } }
     private func resizeForSidebar() {
         guard let window else { return }
         let width = minimumWindowWidth
@@ -319,12 +291,6 @@ final class EditorDocument: NSObject, ObservableObject, WKScriptMessageHandler, 
         window?.title = title
         window?.isDocumentEdited = dirty
         window?.representedURL = fileURL
-        if let item = window?.toolbar?.items.first(where: { $0.itemIdentifier.rawValue == "documentTitle" }),
-           let label = item.view as? NSTextField {
-            label.stringValue = title
-            label.toolTip = fileURL?.path ?? title
-            item.label = title
-        }
     }
     func report(_ error: Error) { let alert = NSAlert(error: error); if let detail = (error as NSError).userInfo["WKJavaScriptExceptionMessage"] as? String { alert.informativeText = detail }; if let button = alert.buttons.first { button.title = tr("OK", "好") }; alert.runModal() }
     func perform(_ operation: @escaping @MainActor () async throws -> Void) {
@@ -447,10 +413,10 @@ final class EditorDocument: NSObject, ObservableObject, WKScriptMessageHandler, 
     }
     func command(_ name: String) { perform { _ = try await self.call("command", arguments: ["name": name], script: "window.markup.command(name)") } }
     func toggleFind() {
-        if showFind { closeFind() } else { showFind = true }
+        if showFind { closeFind() } else { withAnimation(.interface(.easeOut(duration: 0.18))) { showFind = true } }
     }
     func closeFind() {
-        showFind = false
+        withAnimation(.interface(.easeIn(duration: 0.12))) { showFind = false }
         if let webView { window?.makeFirstResponder(webView) }
     }
     func find(backward: Bool = false) {
@@ -477,20 +443,47 @@ enum EditorError: LocalizedError {
 
 struct EditorWindow: View {
     @ObservedObject var document: EditorDocument
+    @ObservedObject private var onboarding = Onboarding.shared
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @FocusState private var searchFocused: Bool
     var body: some View {
         HStack(spacing: 0) {
+            // Laid out at full width and revealed from its trailing edge, so it slides rather than reflows.
             EditorSidebar(document: document, files: document.recentFiles)
-                .frame(width: document.showSidebar ? document.sidebarWidth : 0).clipped()
+                .frame(width: document.sidebarWidth)
+                .frame(width: document.showSidebar ? document.sidebarWidth : 0, alignment: .trailing).clipped()
                 .allowsHitTesting(document.showSidebar).accessibilityHidden(!document.showSidebar)
             if document.showSidebar { SidebarResizeHandle(document: document) }
-            editor
+            editor.floatingCard().padding(document.showSidebar ? [.vertical, .trailing] : .all, InterfaceMetrics.windowInset)
+                // Settles to full size as the welcome glass clears above it.
+                .scaleEffect(onboarding.showWelcome && !reduceMotion ? 0.985 : 1)
         }
+        .disabled(onboarding.showWelcome)
+        .accessibilityHidden(onboarding.showWelcome)
         .frame(minWidth: document.minimumWindowWidth, minHeight: 400)
+        .background(WindowGlass())
+        .overlay {
+            if onboarding.showWelcome {
+                WelcomeScreen(document: document, onboarding: onboarding).transition(.opacity)
+            }
+        }
+        .ignoresSafeArea()
         .onChange(of: document.query) { _, _ in document.searchMissed = false }
+        // Reaching a feature spends its hint.
+        .onChange(of: document.showSidebar) { _, shown in
+            if shown { onboarding.used(.sidebar, document: document) }
+            if shown && document.sidebarTab == "outline" { onboarding.used(.outline, document: document) }
+            onboarding.layoutChanged(document: document)
+        }
+        .onChange(of: document.sidebarTab) { _, tab in if tab == "outline" { onboarding.used(.outline, document: document) } }
+        .onChange(of: document.layout) { _, _ in onboarding.used(.layout, document: document) }
+        .onChange(of: document.sourceMode) { _, _ in onboarding.used(.source, document: document) }
+        .onChange(of: document.showFind) { _, shown in if shown { onboarding.used(.find, document: document) } }
+        .onChange(of: document.ready) { _, ready in if ready { onboarding.schedule(document) } }
     }
     private var editor: some View {
         VStack(spacing: 0) {
+            EditorToolbar(document: document)
             if document.showFind {
                 HStack(spacing: 6) {
                     HStack(spacing: 6) {
@@ -501,16 +494,16 @@ struct EditorWindow: View {
                     .padding(.horizontal, 10).frame(height: 30)
                     .background(RoundedRectangle.control.fill(Color.primary.opacity(0.06)))
                     .overlay(RoundedRectangle.control.strokeBorder(Color.secondary.opacity(searchFocused ? 0.6 : 0), lineWidth: 1))
+                    .animation(.interface(.easeOut(duration: 0.12)), value: searchFocused)
                     .contentShape(RoundedRectangle.control)
                     .onTapGesture { searchFocused = true }
                     Button { document.find(backward: true) } label: { Image(systemName: "chevron.up").frame(width: 40, height: 40) }.buttonStyle(SidebarButtonStyle()).disabled(document.query.isEmpty).accessibilityLabel(document.tr("Previous match", "上一个")).help(document.tr("Previous match", "上一个"))
                     Button { document.find() } label: { Image(systemName: "chevron.down").frame(width: 40, height: 40) }.buttonStyle(SidebarButtonStyle()).disabled(document.query.isEmpty).accessibilityLabel(document.tr("Next match", "下一个")).help(document.tr("Next match", "下一个"))
                     Button { document.closeFind() } label: { Text(document.tr("Done", "完成")).frame(minWidth: 44, minHeight: 40) }.buttonStyle(SidebarButtonStyle()).keyboardShortcut(.escape, modifiers: [])
                 }.padding(.horizontal, 12).padding(.vertical, 4)
-                Divider()
+                .transition(.opacity)
             }
             WebEditor(document: document)
-            Divider()
             HStack(spacing: 8) {
                 Text(document.dirty ? document.tr("Unsaved", "未保存") : document.fileURL == nil ? document.tr("Local Markdown", "本地 Markdown") : document.tr("Saved", "已保存"))
                 Spacer()

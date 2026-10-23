@@ -20,7 +20,7 @@ function scheduleOutline() {
 const lineStart=(doc,index)=>{let pos=0;for(let i=0;i<index;i++)pos+=doc.child(i).nodeSize;return pos;};
 const hash=text=>{let h=0;for(let i=0;i<text.length;i++)h=Math.imul(31,h)+text.charCodeAt(i)|0;return (h>>>0).toString(36);};
 const dark=window.matchMedia?.('(prefers-color-scheme: dark)');
-const diagrams=new Map();
+const diagrams=new Map(), renderedDiagrams=new Set();
 // Mermaid is large, so its prebuilt bundle loads only when a document contains a diagram.
 let mermaidLoader;
 const loadMermaid=()=>mermaidLoader??=new Promise((resolve,reject)=>{
@@ -64,7 +64,9 @@ function blockWidget(info,start) {
     } else {
       el.classList.add('pending');
       el.textContent=language==='en'?'Rendering diagram…':'正在渲染图表…';
-      renderDiagram(info.block.source).then(svg=>{el.classList.remove('pending');el.innerHTML=svg;},error=>{
+      // Only a diagram rendering for the first time fades in; cached ones reappear as the cursor moves without it.
+      const fresh=!renderedDiagrams.has(info.block.source);
+      renderDiagram(info.block.source).then(svg=>{renderedDiagrams.add(info.block.source);el.classList.remove('pending');if(fresh)el.classList.add('entering');el.innerHTML=svg;},error=>{
         el.classList.replace('pending','failed');
         el.textContent=(language==='en'?'Diagram error: ':'图表错误：')+(error?.message||String(error)).split('\n')[0];
       });

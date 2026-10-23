@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "esbuild Editor/editor.js --bundle --minify --outfile=Sources/MarkUp/Resources/Web/editor.js && cp Editor/index.html Editor/style.css Sources/MarkUp/Resources/Web/ && cp node_modules/mermaid/dist/mermaid.min.js Sources/MarkUp/Resources/Web/mermaid.js",
+    "build": "esbuild Editor/editor.js --bundle --minify --outfile=Sources/MarkUp/Resources/Web/editor.js && cp Editor/index.html Editor/style.css Examples/Welcome.md Sources/MarkUp/Resources/Web/ && cp node_modules/mermaid/dist/mermaid.min.js Sources/MarkUp/Resources/Web/mermaid.js",
     "test": "node --test Tests/Editor/*.test.js"
   },
   "dependencies": {
