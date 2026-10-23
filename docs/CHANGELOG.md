@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Local builds now use a development icon with a blue M↑ emblem, so a dev build can sit beside the release app. `package.sh` still builds the release icon.
+
 ## 0.5.0 — Glass window and first-run welcome
 
 - Renamed the app to MarkUp.md. Preferences and recent files carry over.

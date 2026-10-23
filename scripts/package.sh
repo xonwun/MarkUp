@@ -2,7 +2,7 @@
 # Builds MarkUp.md and packages it as a drag-to-install DMG and a ZIP in dist/.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-./scripts/build-app.sh
+MARKUP_RELEASE=1 ./scripts/build-app.sh
 VERSION=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" dist/MarkUp.md.app/Contents/Info.plist)
 STAGE=$(mktemp -d)
 trap 'rm -rf "$STAGE"' EXIT

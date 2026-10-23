@@ -86,8 +86,8 @@ Requires macOS 14+, Swift 6 (Xcode or the Command Line Tools), and Node.js 22+.
 
 ```sh
 npm ci
-./scripts/build-app.sh      # builds dist/MarkUp.md.app (universal)
-./scripts/package.sh        # also makes dist/MarkUp.md-<version>.dmg and .zip
+./scripts/build-app.sh      # builds dist/MarkUp.md.app (universal) with a blue-emblem development icon
+./scripts/package.sh        # release build with the standard icon; also makes dist/MarkUp.md-<version>.dmg and .zip
 ```
 
 Local builds are ad-hoc signed and not notarized.

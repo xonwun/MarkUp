@@ -2,9 +2,12 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 npm run build
-if [[ ! -f Assets/AppIcon.icns || Assets/MarkUp-icon.png -nt Assets/AppIcon.icns ]]; then
+if [[ ! -f Assets/AppIcon.icns || ! -f Assets/AppIcon-dev.icns || Assets/MarkUp-icon.png -nt Assets/AppIcon.icns || Assets/MarkUp-icon.png -nt Assets/AppIcon-dev.icns ]]; then
   ./scripts/build-icon.sh
 fi
+# A local build is the development app and gets the blue-emblem icon, so it can sit beside the release app.
+# package.sh sets MARKUP_RELEASE=1 to build the release icon instead.
+if [[ "${MARKUP_RELEASE:-}" == 1 ]]; then ICON=Assets/AppIcon.icns; else ICON=Assets/AppIcon-dev.icns; fi
 export CLANG_MODULE_CACHE_PATH="${TMPDIR:-/tmp}/markup-clang-cache" SWIFTPM_MODULECACHE_OVERRIDE="${TMPDIR:-/tmp}/markup-swift-cache"
 # One slice per architecture with the native build system, so each links against the current SDK
 # (the multi-arch build records the deployment SDK and macOS would fall back to its legacy appearance).
@@ -13,7 +16,7 @@ for arch in arm64 x86_64; do
 done
 APP="$PWD/dist/MarkUp.md.app"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
-cp Assets/AppIcon.icns "$APP/Contents/Resources/"
+cp "$ICON" "$APP/Contents/Resources/AppIcon.icns"
 lipo -create .build/arm64-apple-macosx/release/MarkUp .build/x86_64-apple-macosx/release/MarkUp -output "$APP/Contents/MacOS/MarkUp"
 cp -R Sources/MarkUp/Resources/Web "$APP/Contents/Resources/"
 cat > "$APP/Contents/Info.plist" <<'PLIST'
@@ -21,4 +24,4 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
 PLIST
 codesign --force --deep --sign - "$APP"
 touch "$APP"
-printf 'Built %s\n' "$APP"
+printf 'Built %s (%s)\n' "$APP" "$([[ "${MARKUP_RELEASE:-}" == 1 ]] && echo release || echo development)"

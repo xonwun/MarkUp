@@ -1,6 +1,10 @@
 # MarkUp app icon
 
-Created using the built-in image generation tool. Master: `MarkUp-icon.png` (RGBA, transparent background). App bundle uses `AppIcon.icns`, with 16–1024 px representations. Run `./scripts/build-icon.sh` from the project root to regenerate from the master. Intermediate icon sizes are generated in `.build/AppIcon.iconset/`, keeping this folder limited to the master, packaged icon, and design notes.
+Created using the built-in image generation tool. Master: `MarkUp-icon.png` (RGBA, transparent background). App bundle uses `AppIcon.icns`, with 16–1024 px representations. Run `./scripts/build-icon.sh` from the project root to regenerate from the master.
+
+## Development icon
+
+`MarkUp-icon-dev.png` and `AppIcon-dev.icns` are the same icon with the teal M↑ emblem turned blue, so a local development build is easy to tell from the release app when both are installed. `scripts/make-dev-icon.swift` makes the master by shifting the emblem's hue; `build-icon.sh` runs it. `./scripts/build-app.sh` uses the dev icon; `./scripts/package.sh` sets `MARKUP_RELEASE=1` and always uses the release icon. Intermediate icon sizes are generated in `.build/AppIcon.iconset/`, keeping this folder limited to the master, packaged icon, and design notes.
 
 Design: warm ivory rounded tile, softly raised folded paper, dark muted teal Markdown emblem. Original artwork inspired by the restrained dimensional treatment of macOS productivity icons.
 
