@@ -31,7 +31,7 @@ Most Markdown apps make you choose between a raw text editor and a preview pane.
 - **Feels like a Mac app.** A glass window with the page floating on it, light and dark mode, keyboard shortcuts, and English or Simplified Chinese.
 
 <p align="center">
-  <img src="docs/images/welcome.png" width="420" alt="The MarkUp.md welcome screen: the word Welcome in a serif face on glass, with a Start Writing button">
+  <img src="docs/images/welcome.png" width="900" alt="The MarkUp.md welcome screen in light mode: the word Welcome in a serif face on glass, with a Start Writing button">
 </p>
 
 **A gentle start.** The first time you open MarkUp.md, a welcome screen greets you and then clears to open a short guide, Welcome.md. Small tips point out the sidebar, outline, layout, source, and find the first time you reach each one, and you can turn them off at any time.
