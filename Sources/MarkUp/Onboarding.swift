@@ -12,11 +12,50 @@ final class Onboarding: ObservableObject {
         case sidebar, outline, layout, source, find
     }
 
-    @Published private(set) var showWelcome = !UserDefaults.standard.bool(forKey: "welcomeSeen")
+    @Published private(set) var showWelcome: Bool
     @Published private(set) var current: Hint?
-    private var done = Set((UserDefaults.standard.stringArray(forKey: "hintsSeen") ?? []).compactMap(Hint.init))
-    private var tipsOff = UserDefaults.standard.bool(forKey: "hintsOff")
+    private var done: Set<Hint>
+    private var tipsOff: Bool
     private var pending: Task<Void, Never>?
+    /// The open hint's anchor, in its window's top-left content coordinates. Clicks elsewhere in that window are held back.
+    var target: (window: NSWindow, frame: CGRect)?
+    private var clickMonitor: Any?
+    /// A hint whose popover just closed, spent at the end of this event unless a blocked click restores it.
+    private var closing: Hint?
+
+    private init() {
+        let defaults = UserDefaults.standard
+        // Preferences outlive the app, so a fresh install or an update would otherwise skip the tour.
+        // The stamp changes with the build number and each time the app is copied into place.
+        let stamp = Self.installStamp
+        if defaults.string(forKey: "onboardingInstall") != stamp {
+            ["welcomeSeen", "hintsSeen", "hintsOff"].forEach(defaults.removeObject(forKey:))
+            defaults.set(stamp, forKey: "onboardingInstall")
+        }
+        showWelcome = !defaults.bool(forKey: "welcomeSeen")
+        done = Set((defaults.stringArray(forKey: "hintsSeen") ?? []).compactMap(Hint.init))
+        tipsOff = defaults.bool(forKey: "hintsOff")
+        clickMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown, .otherMouseDown]) { [weak self] event in
+            MainActor.assumeIsolated { self?.allows(event) ?? true } ? event : nil
+        }
+    }
+
+    private static var installStamp: String {
+        let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "dev"
+        let values = try? Bundle.main.bundleURL.resourceValues(forKeys: [.addedToDirectoryDateKey, .creationDateKey])
+        let installed = values?.addedToDirectoryDate ?? values?.creationDate ?? .distantPast
+        return "\(build)-\(Int(installed.timeIntervalSince1970))"
+    }
+
+    /// While a hint is open, only its feature and the hint itself (another window) take clicks.
+    /// The popover closes itself on a click elsewhere before this runs, so a blocked click brings it back.
+    private func allows(_ event: NSEvent) -> Bool {
+        guard current ?? closing != nil, let target, event.window === target.window, let content = target.window.contentView else { return true }
+        let point = CGPoint(x: event.locationInWindow.x, y: content.frame.height - event.locationInWindow.y)
+        if target.frame.insetBy(dx: -4, dy: -4).contains(point) { return true }
+        if let closing { current = closing; self.closing = nil }
+        return false
+    }
     /// Long enough that a hint follows the user's attention instead of interrupting it.
     private static let delay: Duration = .milliseconds(900)
 
@@ -50,10 +89,16 @@ final class Onboarding: ObservableObject {
         schedule(document)
     }
 
-    /// Closed without using the feature, by its close button or a click elsewhere.
+    /// Closed without using the feature, by Escape or a click on the feature itself.
     func dismiss(_ hint: Hint, document: EditorDocument) {
         guard current == hint else { return }
-        used(hint, document: document)
+        current = nil
+        closing = hint
+        DispatchQueue.main.async { [weak self, weak document] in
+            guard let self, let document, self.closing == hint else { return }
+            self.closing = nil
+            self.used(hint, document: document)
+        }
     }
 
     func turnOff() {
@@ -163,11 +208,19 @@ private struct HintAnchor: ViewModifier {
     let hint: Onboarding.Hint
     let document: EditorDocument
     @ObservedObject var onboarding: Onboarding
+    @ViewState private var frame: CGRect = .zero
 
     func body(content: Content) -> some View {
-        content.popover(isPresented: Binding(get: { onboarding.current == hint }, set: { if !$0 { onboarding.dismiss(hint, document: document) } }), arrowEdge: .bottom) {
+        content
+            .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { frame = $0; claim() }
+            .onChange(of: onboarding.current) { _, _ in claim() }
+            .popover(isPresented: Binding(get: { onboarding.current == hint }, set: { if !$0 { onboarding.dismiss(hint, document: document) } }), arrowEdge: .bottom) {
             HintCard(hint: hint, document: document, onboarding: onboarding)
         }
+    }
+
+    private func claim() {
+        if onboarding.current == hint, let window = document.window { onboarding.target = (window, frame) }
     }
 }
 
