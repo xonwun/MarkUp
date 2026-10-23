@@ -14,6 +14,9 @@
   · macOS 14 or later · Apple silicon and Intel
 </p>
 
+> [!IMPORTANT]
+> **macOS will say "Apple could not verify MarkUp.md" the first time you open it.** The app is free and open source, but not yet notarized by Apple. Click **Done** (not Move to Trash), open **System Settings → Privacy & Security**, scroll down, and click **Open Anyway**. You only do this once. [Step-by-step below.](#install)
+
 <p align="center">
   <img src="docs/images/screenshot.png" width="900" alt="MarkUp.md in light mode: a trip plan with a formatted table and a flow diagram on a card floating over a glass window, with the document outline in the sidebar">
 </p>
@@ -39,14 +42,25 @@ Most Markdown apps make you choose between a raw text editor and a preview pane.
 ## Install
 
 1. Download the **.dmg** from the [latest release](https://github.com/xonwun/MarkUp/releases/latest).
-2. Open it and drag the app into **Applications**.
-3. Open it.
+2. Open it and drag **MarkUp.md** into **Applications**.
+3. Open **MarkUp.md** from Applications. macOS will block it the first time (next section).
 
-**The first time you open it,** macOS may say it can't verify the developer. MarkUp.md is a free, open-source app that isn’t notarized by Apple yet. To open it anyway:
+### The first time you open it
 
-- Open **System Settings → Privacy & Security**, scroll down, and click **Open Anyway** next to the MarkUp.md message. You only need to do this once.
+MarkUp.md is free and open source, and isn't notarized by Apple yet, so macOS shows **"Apple could not verify MarkUp.md is free of malware"**. The app is safe to open; this is the standard warning for apps outside the App Store that haven't paid for notarization.
 
-Prefer a zip? There's one on the same release page.
+1. In the dialog, click **Done**. Don't click Move to Trash.
+2. Open **System Settings → Privacy & Security**.
+3. Scroll down to the **Security** section and click **Open Anyway** next to the MarkUp.md message.
+4. Confirm with your password or Touch ID, then click **Open**.
+
+You only need to do this once. If **Open Anyway** doesn't appear, run this in Terminal instead:
+
+```sh
+xattr -dr com.apple.quarantine /Applications/MarkUp.md.app
+```
+
+Prefer a zip? There's one on the same release page; it needs the same first-time step.
 
 ## Keyboard shortcuts
 

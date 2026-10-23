@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased — Glass window
+## 0.5.0 — Glass window and first-run welcome
 
 - Renamed the app to MarkUp.md. Preferences and recent files carry over.
 - After the welcome screen, the Welcome.md guide opens as an editable file of your own.
