@@ -36,7 +36,7 @@ Most Markdown apps make you choose between a raw text editor and a preview pane.
 2. Open it and drag **MarkUp** into **Applications**.
 3. Open MarkUp.
 
-**The first time you open it,** macOS may say it can't verify the developer. MarkUp is a free app that isn’t notarized by Apple yet. To open it anyway:
+**The first time you open it,** macOS may say it can't verify the developer. MarkUp is a free, open-source app that isn’t notarized by Apple yet. To open it anyway:
 
 - Open **System Settings → Privacy & Security**, scroll down, and click **Open Anyway** next to the MarkUp message. You only need to do this once.
 
@@ -80,3 +80,7 @@ Built with SwiftUI, AppKit, WKWebView, ProseMirror, markdown-it, and Mermaid.
 - `Tests/` — editor tests (`npm test`) and native smoke tests
 
 More detail: [architecture](docs/Architecture.md), [design decisions](docs/Design-decisions.md), [testing](docs/Testing.md), and the [changelog](docs/CHANGELOG.md).
+
+## License
+
+MarkUp is open source under the [MIT License](LICENSE).
