@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- The installer .dmg now opens to a guided window: the app on one pad, the Applications folder on another, an arrow between, and a hint about approving the app the first time. `package.sh` lays the window out through Finder, so it needs a logged-in Mac session.
 - Local builds now use a development icon with a blue M↑ emblem, so a dev build can sit beside the release app. `package.sh` still builds the release icon.
 
 ## 0.5.0 — Glass window and first-run welcome
