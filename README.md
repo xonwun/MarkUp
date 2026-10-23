@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/images/screenshot.png" width="620" alt="MarkUp.md in dark mode: the editor floats as a card on a glass window, with the toolbar on top and the document outline in the sidebar">
+  <img src="docs/images/screenshot.png" width="900" alt="MarkUp.md in light mode: a trip plan with a formatted table and a flow diagram on a card floating over a glass window, with the document outline in the sidebar">
 </p>
 
 ## Why MarkUp.md
