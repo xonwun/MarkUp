@@ -45,6 +45,14 @@ Most Markdown apps make you choose between a raw text editor and a preview pane.
 2. Open it and drag **MarkUp.md** into **Applications**.
 3. Open **MarkUp.md** from Applications. macOS will block it the first time (next section).
 
+Or install with [Homebrew](https://brew.sh):
+
+```bash
+brew install --cask xonwun/markup/markup
+```
+
+macOS still asks for approval the first time you open it.
+
 ### The first time you open it
 
 MarkUp.md is free and open source, and isn't notarized by Apple yet, so macOS shows **"Apple could not verify MarkUp.md is free of malware"**. The app is safe to open; this is the standard warning for apps outside the App Store that haven't paid for notarization.
