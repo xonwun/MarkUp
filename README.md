@@ -11,7 +11,7 @@
 
 <p align="center">
   <a href="https://github.com/xonwun/MarkUp/releases/latest"><strong>Download for macOS</strong></a>
-  · macOS 14 or later · Apple silicon and Intel
+  · macOS 14 or later
 </p>
 
 > [!IMPORTANT]
