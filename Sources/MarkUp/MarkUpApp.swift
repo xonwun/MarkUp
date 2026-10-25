@@ -32,6 +32,9 @@ struct MarkUpApp: App {
                 }
                 Text(document.tr("System menus and dialogs update after restarting MarkUp.md.", "系统菜单和对话框将在重新启动 MarkUp.md 后更新。"))
                     .font(.caption).foregroundStyle(.secondary)
+                Toggle(document.tr("Save changes automatically", "自动保存更改"), isOn: $document.autoSave)
+                Text(document.tr("Files you’ve saved once keep saving as you write. New documents still ask where to go.", "保存过的文件会在你写作时自动保存。新文稿仍需选择保存位置。"))
+                    .font(.caption).foregroundStyle(.secondary)
             }.padding(24).frame(width: 400)
                 .environment(\.locale, Locale(identifier: document.language.rawValue))
         }
@@ -250,6 +253,13 @@ final class EditorDocument: NSObject, ObservableObject, WKScriptMessageHandler, 
     private var bridgeReady = false
     private var pendingPresentation = false
     private var diskData: Data?
+    /// On by default: a document with a file saves itself shortly after typing stops, and before it is left.
+    @Published var autoSave = UserDefaults.standard.object(forKey: "autoSave") as? Bool ?? true {
+        didSet { UserDefaults.standard.set(autoSave, forKey: "autoSave") }
+    }
+    private var pendingAutoSave: Task<Void, Never>?
+    /// Typing pauses this long before a save, so a burst of keys writes once.
+    private static let autoSaveDelay: Duration = .seconds(1)
     private var composing = false
     var dirty: Bool { text != savedText }
     var title: String { fileURL?.lastPathComponent ?? tr("Untitled", "未命名") }
@@ -268,7 +278,7 @@ final class EditorDocument: NSObject, ObservableObject, WKScriptMessageHandler, 
                     drainOpenRequests()
                 } catch { report(error) }
             }
-        case "change": text = body["text"] as? String ?? text; updateTitle()
+        case "change": text = body["text"] as? String ?? text; updateTitle(); scheduleAutoSave()
         case "selection": line = body["line"] as? Int ?? 1
         case "outline":
             headings = (body["headings"] as? [[String: Any]] ?? []).compactMap {
@@ -413,6 +423,10 @@ final class EditorDocument: NSObject, ObservableObject, WKScriptMessageHandler, 
     func confirmDiscard() async -> Bool {
         do { _ = try await snapshot() } catch { report(error); return false }
         guard dirty else { return true }
+        // Leaving a file-backed document saves it, unless another app changed the file; then the user decides.
+        if canAutoSave {
+            do { if try await write() { return true } } catch { report(error); return false }
+        }
         let alert = NSAlert(); alert.messageText = tr("Save changes to “\(title)”?", "要保存对“\(title)”的修改吗？"); alert.informativeText = tr("Your unsaved changes will be lost.", "未保存的修改将会丢失。"); alert.addButton(withTitle: tr("Save", "保存")); alert.addButton(withTitle: tr("Cancel", "取消")); alert.addButton(withTitle: tr("Don’t Save", "不保存"))
         switch alert.runModal() {
         case .alertFirstButtonReturn: do { return try await write() } catch { report(error); return false }
@@ -420,6 +434,27 @@ final class EditorDocument: NSObject, ObservableObject, WKScriptMessageHandler, 
         default: return false
         }
     }
+    /// Auto-save never overwrites a file another app changed; that waits for a save the user asks for.
+    private var canAutoSave: Bool {
+        guard autoSave, let fileURL, let diskData else { return false }
+        return (try? Data(contentsOf: fileURL)) == diskData
+    }
+    private func scheduleAutoSave() {
+        pendingAutoSave?.cancel()
+        guard autoSave, fileURL != nil, dirty else { return }
+        pendingAutoSave = Task { [weak self] in
+            try? await Task.sleep(for: Self.autoSaveDelay)
+            guard !Task.isCancelled else { return }
+            self?.autoSaveNow()
+        }
+    }
+    /// Saves quietly: skipped while busy or mid-composition, and retried on the next change.
+    func autoSaveNow() {
+        pendingAutoSave?.cancel()
+        guard dirty, !busy, !composing, canAutoSave else { return }
+        perform { _ = try await self.write() }
+    }
+    func windowDidResignKey(_ notification: Notification) { autoSaveNow() }
     func windowShouldClose(_ sender: NSWindow) -> Bool {
         if allowClose { return true }
         guard !busy else { return false }

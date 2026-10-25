@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Auto-save, on by default: a document that has a file saves about a second after you stop typing, and when you switch away, open another file, start a new one, close the window, or quit. Untitled documents still ask where to save. If another app changed the file, MarkUp.md doesn't overwrite it and asks on your next save. Turn it off in Settings.
+
 - The welcome screen now says “Hello”, then cycles through “Howdy”, “Aloha” and “Have you eaten?” in a shuffled order, each typed in after the previous one is backspaced, with a caret (in Chinese: 你好, 嗨, Aloha, 吃了吗？). With Reduce Motion on, the words swap without animation.
 - Added File › Close (⌘W), which was missing, and Find Next (⌘G) / Find Previous (⇧⌘G).
 - Added a start page for windows with no file open: a drop area with Open File… and New Document, then Pinned files and up to eight Recents, shown only while the sidebar (which lists them too) is hidden. The editing controls and tips stay hidden until a document opens. The first-run welcome still opens the Welcome guide instead.
