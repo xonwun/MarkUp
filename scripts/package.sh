@@ -28,7 +28,7 @@ tiffutil -cathidpicheck "$WORK/background/background.png" "$WORK/background/back
 hdiutil create -volname "$VOLUME" -srcfolder "$STAGE" -fs HFS+ -format UDRW -ov -quiet "$WORK/rw.dmg"
 hdiutil attach "$WORK/rw.dmg" -readwrite -noverify -noautoopen -quiet
 
-# 612×416 content plus the title bar. Icon positions sit in the stage of the background image.
+# 660×464 content plus the title bar. Icon positions sit in the card's stage in the background image.
 osascript <<OSA
 tell application "Finder"
   tell disk "$VOLUME"
@@ -36,14 +36,14 @@ tell application "Finder"
     set current view of container window to icon view
     set toolbar visible of container window to false
     set statusbar visible of container window to false
-    set the bounds of container window to {200, 120, 812, 564}
+    set the bounds of container window to {200, 120, 860, 612}
     set viewOptions to the icon view options of container window
     set arrangement of viewOptions to not arranged
     set icon size of viewOptions to 128
     set text size of viewOptions to 13
     set background picture of viewOptions to file ".background:background.tiff"
-    set position of item "MarkUp.md.app" of container window to {170, 160}
-    set position of item "Applications" of container window to {442, 160}
+    set position of item "MarkUp.md.app" of container window to {194, 187}
+    set position of item "Applications" of container window to {466, 187}
     update without registering applications
     delay 1
     close
