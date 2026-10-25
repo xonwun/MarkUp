@@ -60,4 +60,5 @@ hdiutil convert "$WORK/rw.dmg" -format UDZO -imagekey zlib-level=9 -o "$DMG" -qu
 
 ditto -c -k --keepParent dist/MarkUp.md.app "dist/MarkUp.md-$VERSION.zip"
 printf 'Packaged %s and dist/MarkUp.md-%s.zip\n' "$DMG" "$VERSION"
-echo "After publishing the v$VERSION release, run scripts/update-cask.sh to update Homebrew."
+./scripts/make-appcast.sh "$VERSION"
+echo "Publish the v$VERSION release with the .dmg, .zip, and dist/appcast.xml, then run scripts/update-cask.sh to update Homebrew."

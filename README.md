@@ -96,6 +96,7 @@ Requires macOS 14+, Swift 6 (Xcode or the Command Line Tools), and Node.js 22+.
 npm ci
 ./scripts/build-app.sh      # builds dist/MarkUp.md.app (universal) with a blue-emblem development icon
 ./scripts/package.sh        # release build with the standard icon; also makes dist/MarkUp.md-<version>.dmg and .zip
+./scripts/make-appcast.sh   # run by package.sh: signs the .zip and writes dist/appcast.xml for in-app updates (upload it to the release)
 ./scripts/update-cask.sh    # after publishing the GitHub release: points the Homebrew cask at it
 ```
 

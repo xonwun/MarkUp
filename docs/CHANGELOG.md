@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- In-app updates with Sparkle: MarkUp.md checks for new releases (it asks before the first automatic check) and has MarkUp.md › Check for Updates…. `package.sh` now also writes `dist/appcast.xml`, signed with the EdDSA key in the login keychain; upload it to the GitHub release beside the .dmg and .zip. Copies installed before this version have no updater, so the first Sparkle release still has to be installed by hand or with Homebrew.
+
 ## 0.6.0 — Start page, guided tour, and auto-save
 
 - Auto-save, on by default: a document that has a file saves about a second after you stop typing, and when you switch away, open another file, start a new one, close the window, or quit. Untitled documents still ask where to save. If another app changed the file, MarkUp.md doesn't overwrite it and asks on your next save. Turn it off in Settings.

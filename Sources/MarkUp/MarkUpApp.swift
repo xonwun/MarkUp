@@ -1,4 +1,5 @@
 import SwiftUI
+import Sparkle
 import Combine
 import WebKit
 import UniformTypeIdentifiers
@@ -20,6 +21,8 @@ enum EditorLayout: String, CaseIterable, Identifiable {
 @main
 struct MarkUpApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var delegate
+    /// Checks the appcast named by SUFeedURL on launch (daily, once the user agrees) and from the app menu.
+    private let updater = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil)
     @StateObject private var document = EditorDocument.shared
     init() {
         UserDefaults.standard.set([InterfaceLanguage.saved.rawValue], forKey: "AppleLanguages")
@@ -46,6 +49,9 @@ struct MarkUpApp: App {
                 .environment(\.locale, Locale(identifier: document.language.rawValue))
         }
         .commands {
+            CommandGroup(after: .appInfo) {
+                Button(document.tr("Check for Updates…", "检查更新…")) { updater.checkForUpdates(nil) }
+            }
             CommandGroup(replacing: .newItem) {
                 Button(document.tr("New", "新建")) { document.newFile() }.keyboardShortcut("n")
                 Button(document.tr("Open…", "打开…")) { document.open() }.keyboardShortcut("o")
