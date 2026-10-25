@@ -178,7 +178,7 @@ struct EditorSidebar: View {
     }
 }
 
-private struct SidebarFileButton: View {
+struct SidebarFileButton: View {
     let url: URL
     @ObservedObject var document: EditorDocument
     @ObservedObject var files: RecentFiles

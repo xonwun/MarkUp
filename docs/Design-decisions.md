@@ -74,11 +74,30 @@ Chosen from the toolbar prototype (Current / Native / Bare): **Bare**, now place
 
 Chosen from the onboarding prototype (Welcome document / Welcome sheet / In-place hints): **In-place hints**, with a welcome screen added in front.
 
-- Welcome screen, shown once (`welcomeSeen`): glass over the whole window with three things on it: "Welcome" in New York (the system serif, 104pt regular, −2 tracking), "A quiet place to write Markdown", and a Start Writing button (Return or Esc also start). The word sharpens in from a 12pt blur over 550ms, and the line and button follow 260ms and 350ms later. Start Writing clears the glass over 700ms on `cubic-bezier(0.23, 1, 0.32, 1)`, and the card settles from 98.5% to full size. With Reduce Motion on, every part becomes a plain fade.
-- Hints: native popovers on the sidebar toggle, the Outline tab, Compact/Reading, Formatted/Source, and Find, in that order, shown one at a time. Each appears 900ms after the previous one closes, and only once its feature is reachable (Outline waits for the sidebar). Using a feature spends its hint. A click elsewhere dismisses it, and Turn Off Tips stops them all (`hintsSeen`, `hintsOff`).
+- Welcome screen, shown once (`welcomeSeen`): glass over the whole window with three things on it: a greeting in New York (the system serif, 104pt regular, −2 tracking; see Welcome greeting below), "A quiet place to write Markdown", and a Start Writing button (Return or Esc also start). The word sharpens in from a 12pt blur over 550ms, and the line and button follow 260ms and 350ms later. Start Writing clears the glass over 700ms on `cubic-bezier(0.23, 1, 0.32, 1)`, and the card settles from 98.5% to full size. With Reduce Motion on, every part becomes a plain fade.
+- Hints: cards drawn inside the window (not popovers, which swallowed the first click) under the sidebar toggle, the Outline tab, Compact/Reading, Formatted/Source, and Find, one at a time. The first appears 900ms after the welcome screen; each later one follows 120ms after the previous feature is used, and that feature is put back 900ms later. While a tip is up, only its feature and the card take clicks; Escape skips a tip and Turn Off Tips stops them all (`hintsSeen`, `hintsOff`). A “You’re all set” note ends the tour.
 - After the welcome screen, MarkUp.md opens the `Welcome.md` guide (unless it was launched to open a file). The guide is copied once to Application Support, so it's a real file the user owns: edits save normally, and it appears in Recents.
 - Rejected: **Welcome document alone** (open `Welcome.md` on first launch, no other UI) never pointed at the toolbar. It survives as the step after the welcome screen. **Welcome sheet** (three paged cards) blocked the first sentence and described controls without showing where they are.
 - Dropped from the prototype's welcome screen: Open a File and the shortcut line. One way forward keeps the moment quiet.
+
+## Tour pointer and finish
+
+Decided from the tour pointer prototype (Beacon / Cursor / Halo / Nudge): **Cursor**, in the theme green.
+
+- While a tip is open, an arrow pointer glides from 34pt right and 46pt below the feature into its center over 45% of a 1.6s loop (ease-in-out). It presses (scale 0.86 at 52%), lifts by 60%, and fades out by 85%. A 24pt ring in the editor accent (#356c64 light, #96c6b8 dark, `--accent` in style.css) ripples out as it presses. Under Reduce Motion the pointer rests on the feature with no ripple.
+- The pointer never takes clicks; it follows the feature when the sidebar moves it.
+- Rejected: **Beacon** (corner dot with a pulsing ring) read as a notification badge. **Halo** (breathing ring on the control) was easy to miss and looked like keyboard focus. **Nudge** (a dot traveling up from the tip's arrow) was too abstract to read as "click here". Blue was rejected for the app's own green.
+- "You're all set" is centered on a full-window blur: a 44pt serif line (the welcome screen's voice) and one line of detail ease in over 0.4s, hold about 2.6s, then the blur clears over 0.9s. A click anywhere ends it early.
+
+## Welcome greeting
+
+Decided from the greeting prototype (Blur rise / Quiet fade / Letter cascade / Rolling line / Typewriter): **Typewriter**.
+
+- The welcome word is "Hello", then "Howdy", "Aloha" and "Have you eaten?" in a shuffled loop that never repeats the word just shown (你好, 嗨, Aloha, 吃了吗？ in Chinese). Each holds for 2.6s.
+- A swap backspaces the word at 27ms a character, pauses 220ms, then types the next at 60ms a keystroke, randomized ±30%, with spaces taking 1.8× as long.
+- A 3pt caret at 70% opacity, 0.82em tall, sits just after the word. It holds steady while typing and blinks every 500ms at rest.
+- Reduce Motion: words swap instantly and the caret stays still. VoiceOver reads "Hello" once.
+- Rejected: **Blur rise** (the first version) read as generic modern-UI polish. **Quiet fade** was too easy to miss. **Letter cascade** was the busiest and slow on the long phrase. **Rolling line** felt mechanical next to a serif greeting. Typewriter fits a writing app: the screen writes.
 
 ## Name
 

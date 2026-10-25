@@ -40,6 +40,11 @@ struct MarkUpApp: App {
                 Button(document.tr("New", "新建")) { document.newFile() }.keyboardShortcut("n")
                 Button(document.tr("Open…", "打开…")) { document.open() }.keyboardShortcut("o")
             }
+            // With no SwiftUI window scene, the File menu has no Close item unless it is added here.
+            CommandGroup(after: .newItem) {
+                Divider()
+                Button(document.tr("Close", "关闭")) { NSApp.keyWindow?.performClose(nil) }.keyboardShortcut("w")
+            }
             CommandGroup(replacing: .saveItem) {
                 Button(document.tr("Save", "保存")) { document.save() }.keyboardShortcut("s")
                 Button(document.tr("Save As…", "另存为…")) { document.save(asNew: true) }.keyboardShortcut("s", modifiers: [.command, .shift])
@@ -50,6 +55,8 @@ struct MarkUpApp: App {
             }
             CommandGroup(after: .textEditing) {
                 Button(document.tr("Find…", "查找…")) { document.toggleFind() }.keyboardShortcut("f")
+                Button(document.tr("Find Next", "查找下一个")) { document.findAgain() }.keyboardShortcut("g")
+                Button(document.tr("Find Previous", "查找上一个")) { document.findAgain(backward: true) }.keyboardShortcut("g", modifiers: [.command, .shift])
                 Button(document.tr("Bold", "加粗")) { document.command("bold") }.keyboardShortcut("b")
                 Button(document.tr("Italic", "斜体")) { document.command("italic") }.keyboardShortcut("i")
             }
@@ -223,6 +230,8 @@ final class EditorDocument: NSObject, ObservableObject, WKScriptMessageHandler, 
         perform { _ = try await self.call("goToHeading", arguments: ["line": heading.line], script: "return window.markup.goToHeading(line)") }
     }
     @Published var text = ""
+    /// An empty window shows the start page until a file opens or a new one starts. The welcome path skips it.
+    @Published var showStart = !Onboarding.shared.showWelcome
     @Published var savedText = ""
     @Published var fileURL: URL?
     @Published var sourceMode = false
@@ -326,6 +335,7 @@ final class EditorDocument: NSObject, ObservableObject, WKScriptMessageHandler, 
     func openURL(_ url: URL, completion: @escaping (NSApplication.DelegateReply) -> Void = { _ in }) {
         guard url.isFileURL else { completion(.failure); return }
         presentEditorWindow()
+        hideStart()
         pendingOpens.append((url.standardizedFileURL.resolvingSymlinksInPath(), completion))
         drainOpenRequests()
     }
@@ -342,12 +352,13 @@ final class EditorDocument: NSObject, ObservableObject, WKScriptMessageHandler, 
                 completion(.success)
                 return
             }
-            guard await confirmDiscard() else { completion(.cancel); return }
+            guard await confirmDiscard() else { restoreStart(); completion(.cancel); return }
             do {
                 try await read(url)
                 presentEditorWindow()
                 completion(.success)
             } catch {
+                restoreStart()
                 report(error)
                 completion(.failure)
             }
@@ -363,6 +374,17 @@ final class EditorDocument: NSObject, ObservableObject, WKScriptMessageHandler, 
         _ = try await call("load", arguments: ["text": value], script: "window.markup.load(text)")
         text = value; savedText = value; fileURL = url; diskData = data; line = 1; updateTitle()
         if let url { recentFiles.recordAccess(url) }
+        hideStart()
+        if let webView { window?.makeFirstResponder(webView) }
+    }
+    private func hideStart() {
+        guard showStart else { return }
+        withAnimation(.interface(.easeOut(duration: 0.2))) { showStart = false }
+    }
+    /// A file that failed to open leaves the window as empty as before, so the start page comes back.
+    private func restoreStart() {
+        guard fileURL == nil, text.isEmpty, !Onboarding.shared.showWelcome else { return }
+        withAnimation(.interface(.easeOut(duration: 0.2))) { showStart = true }
     }
     func save(asNew: Bool = false) { perform { _ = try await self.write(asNew: asNew) } }
     func write(asNew: Bool = false) async throws -> Bool {
@@ -413,11 +435,17 @@ final class EditorDocument: NSObject, ObservableObject, WKScriptMessageHandler, 
     }
     func command(_ name: String) { perform { _ = try await self.call("command", arguments: ["name": name], script: "window.markup.command(name)") } }
     func toggleFind() {
+        guard !showStart else { return }
         if showFind { closeFind() } else { withAnimation(.interface(.easeOut(duration: 0.18))) { showFind = true } }
     }
     func closeFind() {
         withAnimation(.interface(.easeIn(duration: 0.12))) { showFind = false }
         if let webView { window?.makeFirstResponder(webView) }
+    }
+    /// ⌘G repeats the last search, opening the find bar when there is nothing to repeat yet.
+    func findAgain(backward: Bool = false) {
+        guard !showStart else { return }
+        if query.isEmpty { if !showFind { toggleFind() } } else { find(backward: backward) }
     }
     func find(backward: Bool = false) {
         perform {
@@ -462,6 +490,8 @@ struct EditorWindow: View {
         .accessibilityHidden(onboarding.showWelcome)
         .frame(minWidth: document.minimumWindowWidth, minHeight: 400)
         .background(WindowGlass())
+        .overlay { HintLayer(document: document, onboarding: onboarding) }
+        .coordinateSpace(.named(Onboarding.space))
         .overlay {
             if onboarding.showWelcome {
                 WelcomeScreen(document: document, onboarding: onboarding).transition(.opacity)
@@ -473,13 +503,14 @@ struct EditorWindow: View {
         .onChange(of: document.showSidebar) { _, shown in
             if shown { onboarding.used(.sidebar, document: document) }
             if shown && document.sidebarTab == "outline" { onboarding.used(.outline, document: document) }
-            onboarding.layoutChanged(document: document)
+            onboarding.schedule(document)
         }
         .onChange(of: document.sidebarTab) { _, tab in if tab == "outline" { onboarding.used(.outline, document: document) } }
         .onChange(of: document.layout) { _, _ in onboarding.used(.layout, document: document) }
         .onChange(of: document.sourceMode) { _, _ in onboarding.used(.source, document: document) }
         .onChange(of: document.showFind) { _, shown in if shown { onboarding.used(.find, document: document) } }
         .onChange(of: document.ready) { _, ready in if ready { onboarding.schedule(document) } }
+        .onChange(of: document.showStart) { _, _ in onboarding.schedule(document) }
     }
     private var editor: some View {
         VStack(spacing: 0) {
@@ -503,14 +534,24 @@ struct EditorWindow: View {
                 }.padding(.horizontal, 12).padding(.vertical, 4)
                 .transition(.opacity)
             }
-            WebEditor(document: document)
-            HStack(spacing: 8) {
-                Text(document.dirty ? document.tr("Unsaved", "未保存") : document.fileURL == nil ? document.tr("Local Markdown", "本地 Markdown") : document.tr("Saved", "已保存"))
-                Spacer()
-                Text(document.tr("\(document.text.count) characters", "\(document.text.count) 字符")).frame(minWidth: 90, alignment: .trailing)
-                Text(document.tr("Line \(document.line)", "第 \(document.line) 行")).frame(minWidth: 48, alignment: .trailing)
-            }.font(.system(size: 11)).foregroundStyle(.secondary).monospacedDigit().padding(.horizontal, 12).frame(height: 40)
+            ZStack {
+                VStack(spacing: 0) {
+                    WebEditor(document: document)
+                    statusRow
+                }
+                if document.showStart {
+                    StartPage(document: document, files: document.recentFiles).transition(.opacity)
+                }
+            }
         }
+    }
+    private var statusRow: some View {
+        HStack(spacing: 8) {
+            Text(document.dirty ? document.tr("Unsaved", "未保存") : document.fileURL == nil ? document.tr("Local Markdown", "本地 Markdown") : document.tr("Saved", "已保存"))
+            Spacer()
+            Text(document.tr("\(document.text.count) characters", "\(document.text.count) 字符")).frame(minWidth: 90, alignment: .trailing)
+            Text(document.tr("Line \(document.line)", "第 \(document.line) 行")).frame(minWidth: 48, alignment: .trailing)
+        }.font(.system(size: 11)).foregroundStyle(.secondary).monospacedDigit().padding(.horizontal, 12).frame(height: 40)
     }
 }
 

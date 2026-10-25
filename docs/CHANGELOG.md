@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- The welcome screen now says “Hello”, then cycles through “Howdy”, “Aloha” and “Have you eaten?” in a shuffled order, each typed in after the previous one is backspaced, with a caret (in Chinese: 你好, 嗨, Aloha, 吃了吗？). With Reduce Motion on, the words swap without animation.
+- Added File › Close (⌘W), which was missing, and Find Next (⌘G) / Find Previous (⇧⌘G).
+- Added a start page for windows with no file open: a drop area with Open File… and New Document, then Pinned files and up to eight Recents, shown only while the sidebar (which lists them too) is hidden. The editing controls and tips stay hidden until a document opens. The first-run welcome still opens the Welcome guide instead.
+- Onboarding runs again after an update or a reinstall. Tips are now drawn in the window instead of popovers, so clicking the control a tip points at works on the first click and the next tip arrives with the change. While a tip is showing, only that control and the tip take clicks; Escape skips one tip and Turn Off Tips skips the rest. Each feature the user tries is put back a moment after the next tip appears (the sidebar stays open through the outline tip, and the find bar closes with the closing note), so the tour leaves the editor as it found it. A green pointer shows where to click on each step. “You’re all set” closes the tour in the middle of the window over a blur that fades away.
 - The installer .dmg now opens to a guided window: the app on one pad, the Applications folder on another, an arrow between, and a hint about approving the app the first time. `package.sh` lays the window out through Finder, so it needs a logged-in Mac session.
 - Local builds now use a development icon with a blue M↑ emblem, so a dev build can sit beside the release app. `package.sh` still builds the release icon.
 

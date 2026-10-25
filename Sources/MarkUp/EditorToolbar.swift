@@ -19,12 +19,15 @@ struct EditorToolbar: View {
                 ToolbarCluster(document: document, placement: .navigation)
                     .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { navigationWidth = $0 }
                 Spacer(minLength: 0)
+                // The editing controls have nothing to act on until a document is open.
                 ToolbarCluster(document: document, placement: .actions)
+                    .opacity(document.showStart ? 0 : 1).allowsHitTesting(!document.showStart)
+                    .accessibilityHidden(document.showStart)
                     .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { actionsWidth = $0 }
             }
             .padding(.leading, leadingInset)
             // Centered on the card, clear of whichever cluster is wider.
-            Text(document.title).font(.system(size: 13, weight: .semibold))
+            Text(document.showStart ? "" : document.title).font(.system(size: 13, weight: .semibold))
                 .lineLimit(1).truncationMode(.middle)
                 .frame(maxWidth: 260)
                 .overlay(WindowDragArea(toolTip: document.fileURL?.path ?? document.title))
