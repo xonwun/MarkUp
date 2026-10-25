@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.6.1 — In-app updates
 
 - In-app updates with Sparkle: MarkUp.md checks for new releases (it asks before the first automatic check) and has MarkUp.md › Check for Updates…. `package.sh` now also writes `dist/appcast.xml`, signed with the EdDSA key in the login keychain; upload it to the GitHub release beside the .dmg and .zip. Copies installed before this version have no updater, so the first Sparkle release still has to be installed by hand or with Homebrew.
 
