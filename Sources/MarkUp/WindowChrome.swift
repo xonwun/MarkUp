@@ -12,6 +12,9 @@ extension InterfaceMetrics {
     static let cardCornerRadius = max(windowCornerRadius - windowInset, 6)
     /// The toolbar row at the top of the card; the traffic lights center on it.
     static let toolbarHeight: CGFloat = 40
+    /// Toolbar, find bar, and status row still leave the editor about eleven lines, and a quarter-screen tile
+    /// on a 13-inch display still fits. The minimum width follows the editor and sidebar instead.
+    static let windowMinHeight: CGFloat = 400
 }
 
 extension Animation {
@@ -28,6 +31,9 @@ extension Shape where Self == RoundedRectangle {
 }
 
 extension Color {
+    /// The accent outside the editor: AppKit's, which MarkUpApp holds at graphite. SwiftUI's `Color.accentColor`
+    /// keeps following the system setting, so views and `.tint` use this instead.
+    static let interfaceAccent = Color(nsColor: .controlAccentColor)
     /// Matches the editor's `--paper`, so the toolbar and status rows read as one surface with the page.
     /// sRGB of `oklch(0.991 0.004 90)` and `oklch(0.25 0.003 90)`.
     static let paper = Color(nsColor: NSColor(name: "paper") { appearance in
@@ -35,6 +41,15 @@ extension Color {
             ? NSColor(srgbRed: 0x22 / 255, green: 0x22 / 255, blue: 0x20 / 255, alpha: 1)
             : NSColor(srgbRed: 0xfd / 255, green: 0xfc / 255, blue: 0xf9 / 255, alpha: 1)
     })
+}
+
+extension NSColor {
+    /// The editor's `::selection`: `--accent` at 22% (sRGB of `oklch(0.491 0.06 183.2)` and `oklch(0.789 0.054 175)`).
+    static let editorSelection = NSColor(name: "editorSelection") { appearance in
+        appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+            ? NSColor(srgbRed: 0x96 / 255, green: 0xc6 / 255, blue: 0xb8 / 255, alpha: 0.22)
+            : NSColor(srgbRed: 0x35 / 255, green: 0x6c / 255, blue: 0x64 / 255, alpha: 0.22)
+    }
 }
 
 extension View {

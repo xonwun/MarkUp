@@ -23,6 +23,12 @@ struct MarkUpApp: App {
     @StateObject private var document = EditorDocument.shared
     init() {
         UserDefaults.standard.set([InterfaceLanguage.saved.rawValue], forKey: "AppleLanguages")
+        // Controls, focus rings, and text selection outside the editor stay graphite whatever accent the system
+        // uses; the editor keeps its own teal. The argument domain is in memory only, so nothing is written.
+        var arguments = UserDefaults.standard.volatileDomain(forName: UserDefaults.argumentDomain)
+        arguments["AppleAccentColor"] = -1
+        arguments["AppleHighlightColor"] = "0.847059 0.847059 0.862745 Graphite"
+        UserDefaults.standard.setVolatileDomain(arguments, forName: UserDefaults.argumentDomain)
     }
     var body: some Scene {
         Settings {
@@ -36,6 +42,7 @@ struct MarkUpApp: App {
                 Text(document.tr("Files you’ve saved once keep saving as you write. New documents still ask where to go.", "保存过的文件会在你写作时自动保存。新文稿仍需选择保存位置。"))
                     .font(.caption).foregroundStyle(.secondary)
             }.padding(24).frame(width: 400)
+                .tint(.interfaceAccent)
                 .environment(\.locale, Locale(identifier: document.language.rawValue))
         }
         .commands {
@@ -129,7 +136,7 @@ final class EditorWindowController: NSWindowController {
         window.titleVisibility = .hidden
         window.titlebarAppearsTransparent = true
         window.isReleasedWhenClosed = false
-        window.minSize = NSSize(width: document.minimumWindowWidth, height: 400)
+        window.minSize = NSSize(width: document.minimumWindowWidth, height: InterfaceMetrics.windowMinHeight)
         super.init(window: window)
         document.attachWindow(window)
         let content = NSHostingController(rootView: EditorWindow(document: document))
@@ -222,7 +229,7 @@ final class EditorDocument: NSObject, ObservableObject, WKScriptMessageHandler, 
     private func resizeForSidebar() {
         guard let window else { return }
         let width = minimumWindowWidth
-        window.minSize = NSSize(width: width, height: 400)
+        window.minSize = NSSize(width: width, height: InterfaceMetrics.windowMinHeight)
         if window.frame.width < width {
             var frame = window.frame; frame.size.width = width
             window.setFrame(frame, display: true)
@@ -246,6 +253,8 @@ final class EditorDocument: NSObject, ObservableObject, WKScriptMessageHandler, 
     @Published var line = 1
     @Published var busy = false
     weak var webView: WKWebView?
+    /// The bundled index.html, the one page the web view may show.
+    var editorPageURL: URL?
     weak var window: NSWindow?
     private var allowClose = false
     var closeApproved: Bool { allowClose }
@@ -455,6 +464,16 @@ final class EditorDocument: NSObject, ObservableObject, WKScriptMessageHandler, 
         perform { _ = try await self.write() }
     }
     func windowDidResignKey(_ notification: Notification) { autoSaveNow() }
+    /// The find field selects in the editor's teal, so a query looks the same as the match it finds.
+    private lazy var findFieldEditor: NSTextView = {
+        let editor = NSTextView()
+        editor.isFieldEditor = true
+        editor.selectedTextAttributes = [.backgroundColor: NSColor.editorSelection]
+        return editor
+    }()
+    func windowWillReturnFieldEditor(_ sender: NSWindow, to client: Any?) -> Any? {
+        client is NSTextField ? findFieldEditor : nil
+    }
     func windowShouldClose(_ sender: NSWindow) -> Bool {
         if allowClose { return true }
         guard !busy else { return false }
@@ -495,7 +514,12 @@ final class EditorDocument: NSObject, ObservableObject, WKScriptMessageHandler, 
         webView.reload()
     }
     func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping @MainActor (WKNavigationActionPolicy) -> Void) {
-        decisionHandler(navigationAction.request.url?.isFileURL == true ? .allow : .cancel)
+        // Only the editor page loads. A file dropped on the editor would otherwise replace the page with its raw
+        // text, so a Markdown file opens as a document and anything else is refused.
+        guard let url = navigationAction.request.url, url.isFileURL else { decisionHandler(.cancel); return }
+        if url.standardizedFileURL == editorPageURL?.standardizedFileURL { decisionHandler(.allow); return }
+        decisionHandler(.cancel)
+        if ["md", "markdown"].contains(url.pathExtension.lowercased()) { openURL(url) }
     }
 }
 
@@ -523,7 +547,7 @@ struct EditorWindow: View {
         }
         .disabled(onboarding.showWelcome)
         .accessibilityHidden(onboarding.showWelcome)
-        .frame(minWidth: document.minimumWindowWidth, minHeight: 400)
+        .frame(minWidth: document.minimumWindowWidth, minHeight: InterfaceMetrics.windowMinHeight)
         .background(WindowGlass())
         .overlay { HintLayer(document: document, onboarding: onboarding) }
         .coordinateSpace(.named(Onboarding.space))
@@ -532,6 +556,7 @@ struct EditorWindow: View {
                 WelcomeScreen(document: document, onboarding: onboarding).transition(.opacity)
             }
         }
+        .tint(.interfaceAccent)
         .ignoresSafeArea()
         .onChange(of: document.query) { _, _ in document.searchMissed = false }
         // Reaching a feature spends its hint.
@@ -584,7 +609,7 @@ struct EditorWindow: View {
         HStack(spacing: 8) {
             Text(document.dirty ? document.tr("Unsaved", "未保存") : document.fileURL == nil ? document.tr("Local Markdown", "本地 Markdown") : document.tr("Saved", "已保存"))
             Spacer()
-            Text(document.tr("\(document.text.count) characters", "\(document.text.count) 字符")).frame(minWidth: 90, alignment: .trailing)
+            Text(document.tr(document.text.count == 1 ? "1 character" : "\(document.text.count) characters", "\(document.text.count) 字符")).frame(minWidth: 90, alignment: .trailing)
             Text(document.tr("Line \(document.line)", "第 \(document.line) 行")).frame(minWidth: 48, alignment: .trailing)
         }.font(.system(size: 11)).foregroundStyle(.secondary).monospacedDigit().padding(.horizontal, 12).frame(height: 40)
     }
@@ -611,7 +636,10 @@ struct WebEditor: NSViewRepresentable {
         web.navigationDelegate = document
         web.setValue(false, forKey: "drawsBackground")
         document.attach(web)
-        if let url = Bundle.main.url(forResource: "index", withExtension: "html", subdirectory: "Web") ?? Bundle.module.url(forResource: "index", withExtension: "html", subdirectory: "Web") { web.loadFileURL(url, allowingReadAccessTo: url.deletingLastPathComponent()) }
+        if let url = Bundle.main.url(forResource: "index", withExtension: "html", subdirectory: "Web") ?? Bundle.module.url(forResource: "index", withExtension: "html", subdirectory: "Web") {
+            document.editorPageURL = url
+            web.loadFileURL(url, allowingReadAccessTo: url.deletingLastPathComponent())
+        }
         return web
     }
     func updateNSView(_ nsView: WKWebView, context: Context) {}

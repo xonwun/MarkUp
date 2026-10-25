@@ -53,7 +53,7 @@ struct StartPage: View {
         VStack(spacing: 18) {
             Image(systemName: "arrow.down.doc")
                 .font(.system(size: 30, weight: .light))
-                .foregroundStyle(targeted ? Color.accentColor : Color.secondary)
+                .foregroundStyle(targeted ? Color.interfaceAccent : Color.secondary)
                 .accessibilityHidden(true)
             VStack(spacing: 4) {
                 Text(document.tr("Drop a Markdown file here", "将 Markdown 文件拖到这里"))
@@ -72,10 +72,10 @@ struct StartPage: View {
         }
         .padding(.vertical, 40).padding(.horizontal, 24)
         .frame(maxWidth: .infinity)
-        .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(targeted ? Color.accentColor.opacity(0.08) : Color.primary.opacity(0.03)))
+        .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(targeted ? Color.interfaceAccent.opacity(0.08) : Color.primary.opacity(0.03)))
         .overlay(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .strokeBorder(targeted ? Color.accentColor : Color.primary.opacity(0.14), style: StrokeStyle(lineWidth: targeted ? 1.5 : 1, dash: [5, 4]))
+                .strokeBorder(targeted ? Color.interfaceAccent : Color.primary.opacity(0.14), style: StrokeStyle(lineWidth: targeted ? 1.5 : 1, dash: [5, 4]))
         )
         .scaleEffect(targeted && !reduceMotion ? 1.01 : 1)
         .animation(.easeOut(duration: 0.15), value: targeted)

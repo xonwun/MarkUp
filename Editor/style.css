@@ -156,7 +156,8 @@ body {
 
 .table-scroll { overflow-x: auto; }
 .table-scroll::-webkit-scrollbar { height: 8px; }
-.table-scroll::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, .2); border-radius: 4px; }
+/* Muted ink, so the thumb shows on the dark page too. */
+.table-scroll::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--muted) 45%, transparent); border-radius: 4px; }
 
 .table-widget table {
   border-collapse: separate;

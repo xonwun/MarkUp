@@ -44,7 +44,7 @@ private struct SidebarButtonSurface: View {
         configuration.label
             .contentShape(shape)
             .background {
-                shape.fill(selected ? Color.accentColor.opacity(0.14) : Color.primary.opacity(isEnabled && (hovered || configuration.isPressed) ? 0.06 : 0))
+                shape.fill(selected ? Color.interfaceAccent.opacity(0.14) : Color.primary.opacity(isEnabled && (hovered || configuration.isPressed) ? 0.06 : 0))
             }
             .opacity(isEnabled ? (configuration.isPressed ? 0.75 : 1) : 0.4)
             .scaleEffect(configuration.isPressed && !reduceMotion ? 0.96 : 1)

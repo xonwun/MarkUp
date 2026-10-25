@@ -62,7 +62,7 @@ struct EditorSidebar: View {
                         .fixedSize(horizontal: false, vertical: true)
                         .padding(.horizontal, 8).padding(.vertical, 8)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(RoundedRectangle.control.fill(Color.accentColor.opacity(dropSlot == SidebarDropSlot(pinned: true, index: 0) ? 0.14 : 0)))
+                        .background(RoundedRectangle.control.fill(Color.interfaceAccent.opacity(dropSlot == SidebarDropSlot(pinned: true, index: 0) ? 0.14 : 0)))
                         .padding(.bottom, 4)
                         .fileDrop(SidebarDropSlot(pinned: true, index: 0), sidebar: self)
                 } else {
@@ -79,7 +79,7 @@ struct EditorSidebar: View {
                             .controlSize(.large).disabled(document.busy || !document.ready)
                     }.padding(.horizontal, 8).padding(.bottom, 12)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(RoundedRectangle.control.fill(Color.accentColor.opacity(dropSlot == SidebarDropSlot(pinned: false, index: 0) ? 0.14 : 0)))
+                        .background(RoundedRectangle.control.fill(Color.interfaceAccent.opacity(dropSlot == SidebarDropSlot(pinned: false, index: 0) ? 0.14 : 0)))
                         .fileDrop(SidebarDropSlot(pinned: false, index: 0), sidebar: self)
                 } else {
                     rows(files.recent, pinned: false)
@@ -106,7 +106,7 @@ struct EditorSidebar: View {
         }
     }
     private func insertionMark(_ visible: Bool, edge: VerticalEdge) -> some View {
-        Capsule().fill(Color.accentColor).frame(height: 2).padding(.horizontal, 6)
+        Capsule().fill(Color.interfaceAccent).frame(height: 2).padding(.horizontal, 6)
             .offset(y: edge == .top ? -2 : 2)
             .opacity(visible ? 1 : 0).allowsHitTesting(false).accessibilityHidden(true)
     }
