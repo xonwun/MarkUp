@@ -136,7 +136,7 @@ final class EditorWindowController: NSWindowController {
         window.titleVisibility = .hidden
         window.titlebarAppearsTransparent = true
         window.isReleasedWhenClosed = false
-        window.minSize = NSSize(width: document.minimumWindowWidth, height: InterfaceMetrics.windowMinHeight)
+        window.contentMinSize = NSSize(width: document.minimumWindowWidth, height: InterfaceMetrics.windowMinHeight)
         super.init(window: window)
         document.attachWindow(window)
         let content = NSHostingController(rootView: EditorWindow(document: document))
@@ -146,13 +146,15 @@ final class EditorWindowController: NSWindowController {
         // opens full height and half the screen's width, centered.
         if !window.setFrameUsingName("MarkUpEditor") {
             if let screen = (NSScreen.main ?? NSScreen.screens.first)?.visibleFrame {
-                let width = min(max((screen.width / 2).rounded(), window.minSize.width), screen.width)
+                let width = min(max((screen.width / 2).rounded(), window.contentMinSize.width), screen.width)
                 window.setFrame(NSRect(x: (screen.midX - width / 2).rounded(), y: screen.minY, width: width, height: screen.height), display: false)
             } else {
                 window.center()
             }
         }
         window.setFrameAutosaveName("MarkUpEditor")
+        // A frame saved before the limits existed, or with a narrower sidebar, grows to fit them.
+        document.enforceMinimumSize()
         window.layoutIfNeeded()
         document.trafficLightsMaxX = window.trafficLightsMaxX
     }
@@ -226,14 +228,24 @@ final class EditorDocument: NSObject, ObservableObject, WKScriptMessageHandler, 
     @Published var headings: [Heading] = []
     var activeHeading: Int? { headings.last(where: { $0.line <= line })?.line }
     func toggleSidebar() { withAnimation(.interface(.sidebar)) { showSidebar.toggle() } }
-    private func resizeForSidebar() {
+    private func resizeForSidebar() { enforceMinimumSize() }
+    /// The smallest window that keeps the toolbar, editor, and sidebar usable.
+    var minimumWindowSize: NSSize { NSSize(width: minimumWindowWidth, height: InterfaceMetrics.windowMinHeight) }
+    func enforceMinimumSize() {
         guard let window else { return }
-        let width = minimumWindowWidth
-        window.minSize = NSSize(width: width, height: InterfaceMetrics.windowMinHeight)
-        if window.frame.width < width {
-            var frame = window.frame; frame.size.width = width
+        let minimum = minimumWindowSize
+        window.contentMinSize = minimum
+        if window.frame.width < minimum.width || window.frame.height < minimum.height {
+            var frame = window.frame
+            frame.origin.y -= max(0, minimum.height - frame.height)
+            frame.size = NSSize(width: max(frame.width, minimum.width), height: max(frame.height, minimum.height))
             window.setFrame(frame, display: true)
         }
+    }
+    /// The hosting view can loosen the window's own limits, so every live resize is held to them here too.
+    func windowWillResize(_ sender: NSWindow, to frameSize: NSSize) -> NSSize {
+        let minimum = minimumWindowSize
+        return NSSize(width: max(frameSize.width, minimum.width), height: max(frameSize.height, minimum.height))
     }
     func goToHeading(_ heading: Heading) {
         guard ready, !composing else { return }
